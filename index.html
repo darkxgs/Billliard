@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#060b1a" />
+  <title>Royal Eight — Billiards</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'&gt;&lt;circle cx='50' cy='50' r='46' fill='%23111'/&gt;&lt;circle cx='50' cy='42' r='20' fill='%23fff'/&gt;&lt;text x='50' y='50' font-size='24' text-anchor='middle' fill='%23111' font-family='Arial' font-weight='bold'&gt;8&lt;/text&gt;&lt;/svg&gt;" />
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ============ MAIN MENU ============ -->
+  <div id="main-menu" class="screen">
+    <div class="menu-logo">
+      <div class="logo-ball">8</div>
+      <div class="logo-text">ROYAL<span>EIGHT</span></div>
+    </div>
+    <button id="btn-sound-toggle" class="icon-btn top-right" aria-label="Sound">
+      <svg viewBox="0 0 24 24" class="icon-sound-on"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor"/><path d="M16 8a5 5 0 0 1 0 8M18.5 5.5a9 9 0 0 1 0 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      <svg viewBox="0 0 24 24" class="icon-sound-off" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="menu-center">
+      <button id="btn-play" class="btn-primary">PLAY</button>
+      <button id="btn-settings" class="btn-secondary">SETTINGS</button>
+    </div>
+    <div id="menu-stats" class="menu-stats"></div>
+  </div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div id="settings-menu" class="screen hidden">
+    <div class="panel">
+      <h2>SETTINGS</h2>
+      <div class="setting-row"><span>Music</span><button class="toggle" id="set-music"><span class="knob"></span></button></div>
+      <div class="setting-row"><span>Sound Effects</span><button class="toggle" id="set-sfx"><span class="knob"></span></button></div>
+      <div class="setting-row"><span>Aim Sensitivity</span><input type="range" id="set-aim-sens" min="0.2" max="2" step="0.05" /></div>
+      <div class="setting-row"><span>Camera Sensitivity</span><input type="range" id="set-cam-sens" min="0.2" max="2" step="0.05" /></div>
+      <div class="setting-row"><span>Graphics</span>
+        <div class="seg" id="set-graphics">
+          <button data-v="low">LOW</button><button data-v="medium">MED</button><button data-v="high">HIGH</button>
+        </div>
+      </div>
+      <div class="setting-row"><span>Shadow Quality</span>
+        <div class="seg" id="set-shadows">
+          <button data-v="off">OFF</button><button data-v="low">LOW</button><button data-v="high">HIGH</button>
+        </div>
+      </div>
+      <div class="setting-row"><span>Vibration</span><button class="toggle" id="set-vibration"><span class="knob"></span></button></div>
+      <button id="btn-reset-progress" class="btn-danger">RESET PROGRESS</button>
+      <button id="btn-settings-back" class="btn-secondary">BACK</button>
+    </div>
+  </div>
+
+  <!-- ============ HUD ============ -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="player-card" id="p1-card">
+        <div class="pc-name">PLAYER 1</div>
+        <div class="pc-group" id="p1-group">—</div>
+        <div class="pc-balls" id="p1-balls"></div>
+      </div>
+      <div class="turn-indicator" id="turn-indicator">
+        <div class="ti-label" id="ti-label">BREAK</div>
+      </div>
+      <div class="player-card" id="p2-card">
+        <div class="pc-name">PLAYER 2</div>
+        <div class="pc-group" id="p2-group">—</div>
+        <div class="pc-balls" id="p2-balls"></div>
+      </div>
+    </div>
+    <div class="hud-bottom">
+      <button id="btn-spin" class="round-btn" aria-label="Spin"><div class="spin-ball-mini"><div class="spin-dot-mini" id="spin-dot-mini"></div></div></button>
+      <div class="power-wrap" id="power-wrap">
+        <div class="power-track"><div class="power-fill" id="power-fill"></div></div>
+        <div class="power-label">POWER</div>
+      </div>
+      <button id="btn-pause" class="round-btn" aria-label="Pause">
+        <svg viewBox="0 0 24 24" width="22" height="22"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div id="hint-text" class="hint-text"></div>
+  </div>
+
+  <!-- ============ SPIN OVERLAY ============ -->
+  <div id="spin-overlay" class="overlay hidden">
+    <div class="spin-panel">
+      <h3>CUE SPIN</h3>
+      <div class="spin-ball" id="spin-ball"><div class="spin-cross"></div><div class="spin-dot" id="spin-dot"></div></div>
+      <div class="spin-actions">
+        <button id="btn-spin-reset" class="btn-secondary small">RESET</button>
+        <button id="btn-spin-done" class="btn-primary small">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PAUSE ============ -->
+  <div id="pause-menu" class="overlay hidden">
+    <div class="panel">
+      <h2>PAUSED</h2>
+      <button id="btn-resume" class="btn-primary">RESUME</button>
+      <button id="btn-pause-settings" class="btn-secondary">SETTINGS</button>
+      <button id="btn-quit" class="btn-secondary">MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- ============ BANNER ============ -->
+  <div id="banner" class="banner hidden"><div class="banner-inner" id="banner-text"></div></div>
+
+  <!-- ============ GAME OVER ============ -->
+  <div id="gameover" class="overlay hidden">
+    <div class="panel go-panel">
+      <h2 id="go-title">VICTORY</h2>
+      <p id="go-sub"></p>
+      <div id="go-stats" class="go-stats"></div>
+      <button id="btn-rematch" class="btn-primary">REMATCH</button>
+      <button id="btn-go-menu" class="btn-secondary">MAIN MENU</button>
+    </div>
+  </div>
+
+  <div id="orientation-hint" class="hidden">Rotate your device for the best experience 🔄</div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
