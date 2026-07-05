@@ -214,6 +214,83 @@ input[type=range]::-webkit-slider-thumb {
   backdrop-filter: blur(8px);
 }
 .ti-label { font-size: 13px; font-weight: 800; letter-spacing: 3px; color: var(--gold); white-space: nowrap; }
+.ti-timer {
+  text-align: center; font-size: 20px; font-weight: 800;
+  color: var(--text); margin-top: 2px; font-variant-numeric: tabular-nums;
+}
+.ti-timer.urgent { color: var(--danger); animation: timer-pulse 1s infinite; }
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: 0.75; }
+}
+.ti-pot {
+  text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: #ffd76e; margin-top: 2px;
+}
+
+/* ============ LOBBY ============ */
+.lobby-panel { text-align: center; }
+.coins-row {
+  font-size: 13px; letter-spacing: 2px; color: var(--muted);
+  margin-bottom: 18px;
+}
+.coins-row b { color: #ffd76e; font-size: 18px; margin-left: 8px; }
+.bet-label { font-size: 11px; letter-spacing: 3px; color: var(--muted); margin-bottom: 8px; }
+.bet-seg { display: inline-flex; margin-bottom: 22px; }
+.bet-seg button { padding: 10px 18px; font-size: 14px; }
+.bet-seg button:disabled { opacity: 0.3; cursor: not-allowed; }
+.ready-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 14px; }
+.ready-btn {
+  flex: 1; max-width: 170px;
+  padding: 16px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+  color: var(--text);
+  font-size: 15px; font-weight: 800; letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ready-btn .rb-name { display: block; }
+.ready-btn .rb-state {
+  display: block; font-size: 9px; font-weight: 600; letter-spacing: 1px;
+  color: var(--muted); margin-top: 5px;
+}
+.ready-btn.ready {
+  background: rgba(69, 217, 122, 0.15);
+  border-color: #45d97a;
+  box-shadow: 0 0 22px rgba(69,217,122,.25);
+}
+.ready-btn.ready .rb-state { color: #45d97a; }
+.lobby-status {
+  font-size: 12px; letter-spacing: 1px; color: var(--muted);
+  min-height: 18px; margin-bottom: 14px;
+}
+.lobby-status.starting { color: #45d97a; font-weight: 700; }
+
+/* ============ AFK ============ */
+.afk-panel { text-align: center; }
+.afk-panel h2 { color: var(--danger); }
+.afk-panel p { color: var(--muted); font-size: 14px; }
+.afk-count {
+  font-size: 64px; font-weight: 800; color: var(--danger);
+  margin: 12px 0; font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 30px rgba(255,91,106,.4);
+}
+.afk-note { font-size: 11px !important; letter-spacing: 1px; margin-bottom: 16px; }
+
+.go-coins {
+  font-size: 22px; font-weight: 800; margin-bottom: 10px;
+}
+.go-coins.gain { color: #45d97a; }
+.go-coins.loss { color: var(--danger); }
+
+/* ============ RTL (Arabic) ============ */
+[dir="rtl"] * { letter-spacing: 0 !important; }
+[dir="rtl"] .power-track { direction: ltr; }
+[dir="rtl"] .menu-logo { left: auto; right: 22px; }
+[dir="rtl"] .top-right { right: auto; left: 22px; }
+[dir="rtl"] body { font-family: 'Segoe UI', Tahoma, system-ui, sans-serif; }
 
 .hud-bottom {
   position: absolute; bottom: calc(14px + var(--safe-bottom)); left: 0; right: 0;

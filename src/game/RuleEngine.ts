@@ -89,16 +89,16 @@ export class RuleEngine {
       if (eightPocketed) {
         // 8 on the break: re-spot it, breaker continues (house-rule friendly)
         out.respotEight = true;
-        out.banners.push({ text: '8-BALL RE-SPOTTED' });
+        out.banners.push({ text: 'banner.respot' });
       }
       if (this.cueScratched) {
         out.foul = true;
         out.ballInHand = true;
-        out.banners.push({ text: 'SCRATCH!', foul: true });
+        out.banners.push({ text: 'banner.scratch', foul: true });
         out.switchTurn = true;
       } else if (this.pocketed.length > 0) {
         out.switchTurn = false;
-        out.banners.push({ text: 'GREAT BREAK!' });
+        out.banners.push({ text: 'banner.greatBreak' });
       }
       return out; // table stays open after the break
     }
@@ -107,20 +107,20 @@ export class RuleEngine {
     let foulReason: string | null = null;
 
     if (this.cueScratched) {
-      foulReason = 'SCRATCH!';
+      foulReason = 'banner.scratch';
     } else if (!this.firstContact) {
-      foulReason = 'NO BALL HIT — FOUL';
+      foulReason = 'banner.noBallHit';
     } else {
       const fcGroup = this.groupOf(this.firstContact);
       if (!this.openTable && me.group) {
         const mustClear = this.remaining(me.group, balls) > 0;
         const legalFirst = mustClear ? fcGroup === me.group : fcGroup === BallGroup.EIGHT;
-        if (!legalFirst) foulReason = 'WRONG BALL FIRST — FOUL';
+        if (!legalFirst) foulReason = 'banner.wrongBall';
       } else if (this.openTable && fcGroup === BallGroup.EIGHT) {
-        foulReason = '8-BALL FIRST — FOUL';
+        foulReason = 'banner.eightFirst';
       }
       if (!foulReason && this.pocketed.length === 0 && !this.railAfterContact) {
-        foulReason = 'NO RAIL AFTER CONTACT — FOUL';
+        foulReason = 'banner.noRail';
       }
     }
 
@@ -131,7 +131,7 @@ export class RuleEngine {
       if (!me.group || !clearedGroup || this.cueScratched || foulReason) {
         // Early or foul 8-ball → current player loses
         out.winner = this.opponent.index;
-        out.banners.push({ text: '8-BALL FOUL!', foul: true });
+        out.banners.push({ text: 'banner.eightFoul', foul: true });
       } else {
         out.winner = me.index;
       }
@@ -168,7 +168,7 @@ export class RuleEngine {
     const pottedOwn = me.group !== null && this.pocketed.some(b => b.group === me.group);
     out.switchTurn = !pottedOwn;
     if (pottedOwn && !out.assignedGroup) {
-      out.banners.push({ text: 'NICE SHOT!' });
+      out.banners.push({ text: 'banner.niceShot' });
     }
     return out;
   }

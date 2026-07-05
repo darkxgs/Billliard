@@ -11,6 +11,7 @@ import { CameraManager } from './CameraManager';
 import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { SaveManager } from '../utils/storage';
+import { t } from '../utils/i18n';
 import { BALL, GameState, ShotPhase, TABLE, BallGroup } from '../utils/constants';
 
 export class GameManager {
@@ -39,12 +40,23 @@ export class GameManager {
   private placingValid = false;
   private cueStriking = false;
 
+  // Shot clock & AFK forfeit — wall-clock deadlines so they keep counting
+  // even when the tab is throttled (a "disconnected" player must still lose)
+  private static readonly SHOT_TIME = 30;
+  private static readonly AFK_TIME = 30;
+  private bet = 0;
+  private shotDeadline = 0; // performance.now() ms
+  private afkActive = false;
+  private afkDeadline = 0;
+  private watchdog: number | null = null;
+  private pausedShotRemaining = 0;
+
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 0.95;
 
     this.cameraMgr = new CameraManager(innerWidth / innerHeight);
     this.effects = new Effects(this.renderer, this.scene, this.cameraMgr.camera);
@@ -80,14 +92,16 @@ export class GameManager {
     this.physics.balls = this.balls;
 
     this.ui = new UIManager(this.save, {
-      onPlay: () => this.startGame(),
+      onPlay: () => this.ui.openLobby(),
       onQuitToMenu: () => this.toMenu(),
-      onRematch: () => this.startGame(),
+      onRematch: () => this.ui.openLobby(),
       onPause: () => this.pause(),
       onResume: () => this.resume(),
       onSettingsChanged: () => this.applySettings(),
       onSpinChanged: () => { /* read from ui.spinX/Y at strike time */ },
       onSoundToggle: () => this.applySettings(),
+      onMatchStart: (bet) => this.startGame(bet),
+      onAfkStay: () => this.resolveAfk(false),
     });
 
     this.input = new InputManager(canvas, document.getElementById('power-wrap')!, {
@@ -131,7 +145,8 @@ export class GameManager {
 
   // ================= GAME FLOW =================
 
-  private startGame(): void {
+  private startGame(bet = 0): void {
+    this.bet = bet;
     this.ui.hideMainMenu();
     this.ui.hide('gameover');
     this.rules.reset();
@@ -142,9 +157,15 @@ export class GameManager {
     this.cameraMgr.mode = 'aim';
     this.cameraMgr.angle = 0;
     this.cameraMgr.zoom = 1;
+    this.afkActive = false;
+    this.ui.hideAfk();
+    this.resetShotClock();
+    this.stopWatchdog();
+    this.watchdog = window.setInterval(() => this.checkClocks(), 1000);
+    this.ui.setPot(bet);
     this.ui.showHud();
-    this.ui.setHint('Drag to aim — pull the power bar to shoot');
-    this.refreshHud('BREAK');
+    this.ui.setHint(t('hint.aim'));
+    this.refreshHud(t('hud.break'));
     this.cue.setPullback(0);
   }
 
@@ -152,18 +173,25 @@ export class GameManager {
     this.state = GameState.MENU;
     this.cameraMgr.mode = 'menu';
     this.cue.hide();
+    this.afkActive = false;
+    this.stopWatchdog();
+    this.ui.hideAfk();
+    this.ui.setTimer(null);
     this.ui.showMainMenu();
   }
 
   private pause(): void {
     if (this.state !== GameState.PLAYING) return;
     this.state = GameState.PAUSED;
+    // Freeze the shot clock while paused
+    this.pausedShotRemaining = Math.max(0, this.shotDeadline - performance.now());
     this.ui.showPause();
   }
 
   private resume(): void {
     if (this.state !== GameState.PAUSED) return;
     this.state = GameState.PLAYING;
+    this.shotDeadline = performance.now() + this.pausedShotRemaining;
   }
 
   private rackBalls(): void {
@@ -190,6 +218,79 @@ export class GameManager {
   private refreshHud(label?: string): void {
     this.ui.setTurn(this.rules.current, this.rules.players, this.balls, label);
   }
+
+  // ================= SHOT CLOCK / AFK =================
+
+  private get inDecisionPhase(): boolean {
+    return this.phase === ShotPhase.AIM ||
+      this.phase === ShotPhase.CHARGING ||
+      this.phase === ShotPhase.BALL_IN_HAND;
+  }
+
+  private resetShotClock(): void {
+    this.shotDeadline = performance.now() + GameManager.SHOT_TIME * 1000;
+    this.ui.setTimer(GameManager.SHOT_TIME);
+  }
+
+  /** Fires every second even in throttled/background tabs. */
+  private checkClocks(): void {
+    if (this.state !== GameState.PLAYING) return;
+    const now = performance.now();
+    if (this.afkActive) {
+      this.ui.updateAfk((this.afkDeadline - now) / 1000);
+      if (now >= this.afkDeadline) this.resolveAfk(true);
+    } else if (this.inDecisionPhase) {
+      this.ui.setTimer((this.shotDeadline - now) / 1000);
+      if (now >= this.shotDeadline) this.enterAfk();
+    }
+  }
+
+  private stopWatchdog(): void {
+    if (this.watchdog !== null) {
+      clearInterval(this.watchdog);
+      this.watchdog = null;
+    }
+  }
+
+  /** Shot clock expired: assume the player stepped away — give them 30s to respond. */
+  private enterAfk(): void {
+    this.afkActive = true;
+    this.afkDeadline = performance.now() + GameManager.AFK_TIME * 1000;
+    this.ui.setTimer(0);
+    this.ui.showAfk(this.rules.current.name, GameManager.AFK_TIME);
+  }
+
+  /**
+   * End the AFK countdown. `forfeit` = the 30s ran out (player loses);
+   * otherwise they tapped "I'M HERE" and only concede a shot-clock foul.
+   */
+  private resolveAfk(forfeit: boolean): void {
+    if (!this.afkActive) return;
+    this.afkActive = false;
+    this.ui.hideAfk();
+
+    if (forfeit) {
+      const winner = this.rules.opponent.index;
+      this.ui.toastBanner(t('banner.forfeit', { name: this.rules.current.name.toUpperCase() }), true);
+      this.finishGame(winner);
+      return;
+    }
+
+    // Shot-clock foul: turn passes, opponent gets ball in hand
+    this.ui.toastBanner('banner.timeFoul', true);
+    this.ui.setPower(0);
+    this.cue.setPullback(0);
+    this.rules.passTurn();
+    const cueBall = this.balls[0];
+    cueBall.velocity.set(0, 0, 0);
+    cueBall.angularVelocity.set(0, 0, 0);
+    this.phase = ShotPhase.BALL_IN_HAND;
+    this.cameraMgr.mode = 'place';
+    this.ui.setHint(t('hint.place', { name: this.rules.current.name }));
+    this.resetShotClock();
+    this.refreshHud();
+  }
+
 
   // ================= INPUT =================
 
@@ -224,7 +325,7 @@ export class GameManager {
     } else if (phase === 'end' && this.placingValid) {
       this.phase = ShotPhase.AIM;
       this.cameraMgr.mode = 'aim';
-      this.ui.setHint('Drag to aim — pull the power bar to shoot');
+      this.ui.setHint(t('hint.aim'));
     }
   }
 
@@ -296,7 +397,7 @@ export class GameManager {
         this.cameraMgr.mode = 'place';
         // Park it somewhere sensible until the player drags
         this.findFreeSpot(cueBall, -TABLE.PLAY_W / 4, 0);
-        this.ui.setHint(`${this.rules.current.name}: drag on the table to place the cue ball`);
+        this.ui.setHint(t('hint.place', { name: this.rules.current.name }));
       }
     }
 
@@ -304,11 +405,12 @@ export class GameManager {
       this.phase = ShotPhase.AIM;
       this.cameraMgr.mode = 'aim';
       this.autoAim();
-      this.ui.setHint('Drag to aim — pull the power bar to shoot');
+      this.ui.setHint(t('hint.aim'));
     }
 
     this.ui.resetSpin();
     this.cue.setPullback(0);
+    this.resetShotClock();
     this.refreshHud();
   }
 
@@ -351,15 +453,19 @@ export class GameManager {
 
   private finishGame(winner: 0 | 1): void {
     this.state = GameState.GAME_OVER;
+    this.stopWatchdog();
     const youWon = winner === 0; // player 1 is the local "you" for stats
-    this.save.recordResult(youWon);
+    this.save.recordResult(youWon, this.bet);
+    const coinDelta = this.bet === 0 ? 0 : (youWon ? this.bet : -this.bet);
+    this.ui.setTimer(null);
     if (youWon) this.audio.win(); else this.audio.lose();
     this.vibrate(youWon ? 80 : 120);
     setTimeout(() => {
       this.ui.showGameOver(
         this.rules.players[winner].name,
         youWon,
-        youWon ? 'The 8-ball is down. Clean game!' : 'Better luck next rack.',
+        youWon ? t('go.winSub') : t('go.loseSub'),
+        coinDelta,
       );
     }, 900);
   }
@@ -374,6 +480,7 @@ export class GameManager {
       this.effects.update(dt);
 
       if (this.state === GameState.PLAYING) {
+        this.checkClocks();
         this.updateGame(dt);
       }
     }

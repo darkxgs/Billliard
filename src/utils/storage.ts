@@ -1,3 +1,5 @@
+import type { Lang } from './i18n';
+
 export type GraphicsLevel = 'low' | 'medium' | 'high';
 export type ShadowLevel = 'off' | 'low' | 'high';
 
@@ -9,6 +11,7 @@ export interface Settings {
   graphics: GraphicsLevel;
   shadows: ShadowLevel;
   vibration: boolean;
+  language: Lang;
 }
 
 export interface Stats {
@@ -17,6 +20,7 @@ export interface Stats {
   losses: number;
   streak: number;
   bestStreak: number;
+  coins: number;
 }
 
 const SETTINGS_KEY = 'royal8.settings.v1';
@@ -30,6 +34,7 @@ const DEFAULT_SETTINGS: Settings = {
   graphics: 'high',
   shadows: 'high',
   vibration: true,
+  language: (navigator.language || '').toLowerCase().startsWith('ar') ? 'ar' : 'en',
 };
 
 const DEFAULT_STATS: Stats = {
@@ -38,6 +43,7 @@ const DEFAULT_STATS: Stats = {
   losses: 0,
   streak: 0,
   bestStreak: 0,
+  coins: 1000,
 };
 
 function detectDefaultGraphics(): GraphicsLevel {
@@ -74,15 +80,18 @@ export class SaveManager {
     try { localStorage.setItem(STATS_KEY, JSON.stringify(this.stats)); } catch { /* storage unavailable */ }
   }
 
-  recordResult(win: boolean): void {
+  /** Record a match result; `bet` coins are won or lost by the local player (Player 1). */
+  recordResult(win: boolean, bet = 0): void {
     this.stats.gamesPlayed++;
     if (win) {
       this.stats.wins++;
       this.stats.streak++;
       this.stats.bestStreak = Math.max(this.stats.bestStreak, this.stats.streak);
+      this.stats.coins += bet;
     } else {
       this.stats.losses++;
       this.stats.streak = 0;
+      this.stats.coins = Math.max(0, this.stats.coins - bet);
     }
     this.saveStats();
   }

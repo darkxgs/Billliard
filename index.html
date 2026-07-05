@@ -21,8 +21,8 @@
       <svg viewBox="0 0 24 24" class="icon-sound-off" style="display:none"><path d="M3 9v6h4l5 5V4L7 9H3z" fill="currentColor"/><path d="M16 9l6 6M22 9l-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
     <div class="menu-center">
-      <button id="btn-play" class="btn-primary">PLAY</button>
-      <button id="btn-settings" class="btn-secondary">SETTINGS</button>
+      <button id="btn-play" class="btn-primary" data-i18n="menu.play">PLAY</button>
+      <button id="btn-settings" class="btn-secondary" data-i18n="menu.settings">SETTINGS</button>
     </div>
     <div id="menu-stats" class="menu-stats"></div>
   </div>
@@ -30,24 +30,28 @@
   <!-- ============ SETTINGS ============ -->
   <div id="settings-menu" class="screen hidden">
     <div class="panel">
-      <h2>SETTINGS</h2>
-      <div class="setting-row"><span>Music</span><button class="toggle" id="set-music"><span class="knob"></span></button></div>
-      <div class="setting-row"><span>Sound Effects</span><button class="toggle" id="set-sfx"><span class="knob"></span></button></div>
-      <div class="setting-row"><span>Aim Sensitivity</span><input type="range" id="set-aim-sens" min="0.2" max="2" step="0.05" /></div>
-      <div class="setting-row"><span>Camera Sensitivity</span><input type="range" id="set-cam-sens" min="0.2" max="2" step="0.05" /></div>
-      <div class="setting-row"><span>Graphics</span>
+      <h2 data-i18n="settings.title">SETTINGS</h2>
+      <div class="setting-row"><span data-i18n="settings.language">Language</span>
+        <div class="seg" id="set-language">
+          <button data-v="en">EN</button><button data-v="ar">عربي</button>
+        </div>
+      </div>
+      <div class="setting-row"><span data-i18n="settings.music">Music</span><button class="toggle" id="set-music"><span class="knob"></span></button></div>
+      <div class="setting-row"><span data-i18n="settings.sfx">Sound Effects</span><button class="toggle" id="set-sfx"><span class="knob"></span></button></div>
+      <div class="setting-row"><span data-i18n="settings.aim">Aim Sensitivity</span><input type="range" id="set-aim-sens" min="0.2" max="2" step="0.05" /></div>
+      <div class="setting-row"><span data-i18n="settings.cam">Camera Sensitivity</span><input type="range" id="set-cam-sens" min="0.2" max="2" step="0.05" /></div>
+      <div class="setting-row"><span data-i18n="settings.graphics">Graphics</span>
         <div class="seg" id="set-graphics">
-          <button data-v="low">LOW</button><button data-v="medium">MED</button><button data-v="high">HIGH</button>
+          <button data-v="low" data-i18n="opt.low">LOW</button><button data-v="medium" data-i18n="opt.med">MED</button><button data-v="high" data-i18n="opt.high">HIGH</button>
         </div>
       </div>
-      <div class="setting-row"><span>Shadow Quality</span>
+      <div class="setting-row"><span data-i18n="settings.shadows">Shadow Quality</span>
         <div class="seg" id="set-shadows">
-          <button data-v="off">OFF</button><button data-v="low">LOW</button><button data-v="high">HIGH</button>
+          <button data-v="off" data-i18n="opt.off">OFF</button><button data-v="low" data-i18n="opt.low">LOW</button><button data-v="high" data-i18n="opt.high">HIGH</button>
         </div>
       </div>
-      <div class="setting-row"><span>Vibration</span><button class="toggle" id="set-vibration"><span class="knob"></span></button></div>
-      <button id="btn-reset-progress" class="btn-danger">RESET PROGRESS</button>
-      <button id="btn-settings-back" class="btn-secondary">BACK</button>
+      <div class="setting-row"><span data-i18n="settings.vibration">Vibration</span><button class="toggle" id="set-vibration"><span class="knob"></span></button></div>
+      <button id="btn-settings-back" class="btn-secondary" data-i18n="settings.back">BACK</button>
     </div>
   </div>
 
@@ -55,15 +59,17 @@
   <div id="hud" class="hidden">
     <div class="hud-top">
       <div class="player-card" id="p1-card">
-        <div class="pc-name">PLAYER 1</div>
+        <div class="pc-name" data-i18n="lobby.p1">PLAYER 1</div>
         <div class="pc-group" id="p1-group">—</div>
         <div class="pc-balls" id="p1-balls"></div>
       </div>
       <div class="turn-indicator" id="turn-indicator">
         <div class="ti-label" id="ti-label">BREAK</div>
+        <div class="ti-timer" id="ti-timer">30</div>
+        <div class="ti-pot hidden" id="ti-pot"></div>
       </div>
       <div class="player-card" id="p2-card">
-        <div class="pc-name">PLAYER 2</div>
+        <div class="pc-name" data-i18n="lobby.p2">PLAYER 2</div>
         <div class="pc-group" id="p2-group">—</div>
         <div class="pc-balls" id="p2-balls"></div>
       </div>
@@ -72,7 +78,7 @@
       <button id="btn-spin" class="round-btn" aria-label="Spin"><div class="spin-ball-mini"><div class="spin-dot-mini" id="spin-dot-mini"></div></div></button>
       <div class="power-wrap" id="power-wrap">
         <div class="power-track"><div class="power-fill" id="power-fill"></div></div>
-        <div class="power-label">POWER</div>
+        <div class="power-label" data-i18n="hud.power">POWER</div>
       </div>
       <button id="btn-pause" class="round-btn" aria-label="Pause">
         <svg viewBox="0 0 24 24" width="22" height="22"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
@@ -84,22 +90,51 @@
   <!-- ============ SPIN OVERLAY ============ -->
   <div id="spin-overlay" class="overlay hidden">
     <div class="spin-panel">
-      <h3>CUE SPIN</h3>
+      <h3 data-i18n="spin.title">CUE SPIN</h3>
       <div class="spin-ball" id="spin-ball"><div class="spin-cross"></div><div class="spin-dot" id="spin-dot"></div></div>
       <div class="spin-actions">
-        <button id="btn-spin-reset" class="btn-secondary small">RESET</button>
-        <button id="btn-spin-done" class="btn-primary small">DONE</button>
+        <button id="btn-spin-reset" class="btn-secondary small" data-i18n="spin.reset">RESET</button>
+        <button id="btn-spin-done" class="btn-primary small" data-i18n="spin.done">DONE</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ============ MATCH LOBBY ============ -->
+  <div id="lobby" class="overlay hidden">
+    <div class="panel lobby-panel">
+      <h2 data-i18n="lobby.title">MATCH SETUP</h2>
+      <div class="coins-row"><span data-i18n="lobby.coins">YOUR COINS</span> <b id="lobby-coins">0</b></div>
+      <div class="bet-label" data-i18n="lobby.bet">BET</div>
+      <div class="seg bet-seg" id="bet-seg">
+        <button data-v="0" data-i18n="lobby.free">FREE</button><button data-v="50">50</button><button data-v="100">100</button><button data-v="250">250</button>
+      </div>
+      <div class="ready-row">
+        <button id="ready-p1" class="ready-btn"><span class="rb-name" data-i18n="lobby.p1">PLAYER 1</span><span class="rb-state">TAP WHEN READY</span></button>
+        <button id="ready-p2" class="ready-btn"><span class="rb-name" data-i18n="lobby.p2">PLAYER 2</span><span class="rb-state">TAP WHEN READY</span></button>
+      </div>
+      <div id="lobby-status" class="lobby-status" data-i18n="lobby.bothReady">Both players must be ready</div>
+      <button id="btn-lobby-back" class="btn-secondary small" data-i18n="lobby.back">BACK</button>
+    </div>
+  </div>
+
+  <!-- ============ AFK / TIMEOUT ============ -->
+  <div id="afk-overlay" class="overlay hidden">
+    <div class="panel afk-panel">
+      <h2 data-i18n="afk.title">TIME'S UP</h2>
+      <p id="afk-sub">Player 1, are you still there?</p>
+      <div class="afk-count" id="afk-count">30</div>
+      <p class="afk-note" data-i18n="afk.note">No response = forfeit the match</p>
+      <button id="btn-afk-here" class="btn-primary" data-i18n="afk.here">I'M HERE</button>
     </div>
   </div>
 
   <!-- ============ PAUSE ============ -->
   <div id="pause-menu" class="overlay hidden">
     <div class="panel">
-      <h2>PAUSED</h2>
-      <button id="btn-resume" class="btn-primary">RESUME</button>
-      <button id="btn-pause-settings" class="btn-secondary">SETTINGS</button>
-      <button id="btn-quit" class="btn-secondary">MAIN MENU</button>
+      <h2 data-i18n="pause.title">PAUSED</h2>
+      <button id="btn-resume" class="btn-primary" data-i18n="pause.resume">RESUME</button>
+      <button id="btn-pause-settings" class="btn-secondary" data-i18n="pause.settings">SETTINGS</button>
+      <button id="btn-quit" class="btn-secondary" data-i18n="pause.menu">MAIN MENU</button>
     </div>
   </div>
 
@@ -111,13 +146,14 @@
     <div class="panel go-panel">
       <h2 id="go-title">VICTORY</h2>
       <p id="go-sub"></p>
+      <p id="go-coins" class="go-coins hidden"></p>
       <div id="go-stats" class="go-stats"></div>
-      <button id="btn-rematch" class="btn-primary">REMATCH</button>
-      <button id="btn-go-menu" class="btn-secondary">MAIN MENU</button>
+      <button id="btn-rematch" class="btn-primary" data-i18n="go.rematch">REMATCH</button>
+      <button id="btn-go-menu" class="btn-secondary" data-i18n="go.menu">MAIN MENU</button>
     </div>
   </div>
 
-  <div id="orientation-hint" class="hidden">Rotate your device for the best experience 🔄</div>
+  <div id="orientation-hint" class="hidden" data-i18n="orientation">Rotate your device for the best experience 🔄</div>
 
   <script type="module" src="/src/main.ts"></script>
 </body>
